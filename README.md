@@ -1,1 +1,5 @@
-Vídeo -> TesteProjeto.mp4
+Vídeo em anexo: TesteProjeto.mp4
+
+Integrantes do grupo:
+- Iago Rosa de Oliveira (22.224.027-7)
+- Mariah Santos Gomes (22.224.026-9)
