@@ -1,4 +1,4 @@
-Vídeo em anexo: TesteProjeto.mp4
+Vídeo: TesteProjeto.mp4
 
 Integrantes do grupo:
 - Iago Rosa de Oliveira (22.224.027-7)
