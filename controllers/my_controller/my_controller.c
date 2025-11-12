@@ -194,6 +194,7 @@ int main(int argc, char **argv) {
         posAntes[i][1]=posDepois[i][1];
         posAntes[i][2]=posDepois[i][2];
       }
+      // Se ele não achar a caixa certa ele gira no próprio eixo para mudar a direção
       wb_motor_set_velocity(MotorEsquerdo, 2.5);
       wb_motor_set_velocity(MotorDireito ,-2.5);
     }
