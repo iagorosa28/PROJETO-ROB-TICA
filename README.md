@@ -9,11 +9,11 @@
 
 🔹[Objetivo](#Objetivo)
 
-🔹[Passo a passo de elaboração](passo-a-passo-de-elaboracao)
+🔹[Passo a passo de elaboração](#Passo-a-passo-de-elaboração)
 
-🔹[Vídeo disponível em](video-disponivel-em)
+🔹[Vídeo disponível em](#Vídeo-disponível-em)
 
-🔹[Desenvolvedores](desenvolvedores)
+🔹[Desenvolvedores](#Desenvolvedores)
 
 ## Objetivo
 Esse projeto tem o objetivo de fazer a movimentação do robô até as caixas e verificar qual caixa é a mais leve, ou seja, a certa.
