@@ -2,7 +2,6 @@
   Exemplo introdutório de uso do WeBots
  */
 
-
 /*
  * You may need to add include files like <webots/distance_sensor.h> or
  * <webots/motor.h>, etc.
@@ -10,6 +9,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>   // para sqrt
 
 #include <webots/robot.h>
 #include <webots/motor.h>
@@ -24,14 +24,12 @@
 //TIME_STEP é o incremento de tempo usado na simulação
 //512 é um valor MUITO alto.... mas ajuda para ler o que está sendo mostrado no console
 //para a simulação final, melhor usar valores menores.... 16 ou 32!
-#define TIME_STEP 512
+#define TIME_STEP 32
 
 #define QtddSensoresProx 8
 #define QtddLeds 10
 #define TamanhoTexto 256
-#define QtddCaixa 8
-
-
+#define QtddCaixa 20
 
 /*
  * This is the main program.
@@ -44,22 +42,13 @@ int main(int argc, char **argv) {
   int i=0;
   char texto[TamanhoTexto]={0};
   double LeituraSensorProx[QtddSensoresProx];
-  //double AceleradorDireito=1.0, AceleradorEsquerdo=1.0;
   double posAntes[QtddCaixa][3];
   double posDepois[QtddCaixa][3];
   int achei = 0;
   double tempoInicio = 0;
 
-
   /* necessary to initialize webots stuff */
   wb_robot_init();
-
-  /*
-   * You should declare here WbDeviceTag variables for storing
-   * robot devices like this:
-   *  WbDeviceTag my_sensor = wb_robot_get_device("my_sensor");
-   *  WbDeviceTag my_actuator = wb_robot_get_device("my_actuator");
-   */
 
   //configurando MOTORES
   WbDeviceTag MotorEsquerdo, MotorDireito;
@@ -88,7 +77,7 @@ int main(int argc, char **argv) {
   Leds[0] = wb_robot_get_device("led0");
   wb_led_set(Leds[0],-1);
 
-  // ----------- Caixas (parte do segundo código) -----------
+  // ----------- Caixas -----------
   WbNodeRef caixa[QtddCaixa];
   char nomeCaixa[10]={0};
 
@@ -118,20 +107,30 @@ int main(int argc, char **argv) {
 
   while (wb_robot_step(TIME_STEP) != -1) {
 
+    // ----------- Limpa texto para próxima iteração -----------
+    memset(texto,0,TamanhoTexto);
+
     // ----------- Lendo sensores de proximidade -----------
     for(i=0;i<QtddSensoresProx;i++){
        LeituraSensorProx[i]= wb_distance_sensor_get_value(SensorProx[i])-60;
-       sprintf(texto,"%s|%d: %6.0f  ",texto,i,LeituraSensorProx[i]);
+
+       char temp[64];
+       snprintf(temp, sizeof(temp), "|%d: %6.0f  ", i, LeituraSensorProx[i]);
+       strncat(texto, temp, TamanhoTexto - strlen(texto) - 1);
     }
 
     // ----------- Lendo posição das caixas -----------
-    strcat(texto, "\n           X       Y      Z\n");
+    strncat(texto, "\n           X       Y      Z\n",
+            TamanhoTexto - strlen(texto) - 1);
+
     for(i=0;i<QtddCaixa;i++){
       if(caixa[i]!=NULL){
         const double *PosicaoCaixa = wb_supervisor_node_get_position(caixa[i]);
         char temp[128];
-        sprintf(temp,"CAIXA%02d %5.2f   %5.2f  %5.2f\n",i,PosicaoCaixa[0],PosicaoCaixa[1],PosicaoCaixa[2]);
-        strcat(texto,temp);
+        snprintf(temp, sizeof(temp),
+                 "CAIXA%02d %5.2f   %5.2f  %5.2f\n",
+                 i, PosicaoCaixa[0], PosicaoCaixa[1], PosicaoCaixa[2]);
+        strncat(texto, temp, TamanhoTexto - strlen(texto) - 1);
       }
     }
 
@@ -141,76 +140,79 @@ int main(int argc, char **argv) {
     // ----------- Pisca o LED -----------
     wb_led_set(Leds[0], wb_led_get(Leds[0])*-1); 
 
-    // Movimento baseado na primeira caixa (só como exemplo)
-    const double *PosicaoCaixa = NULL;
-    for(i=0;i<QtddCaixa;i++){
-      if(caixa[i]!=NULL){
-        PosicaoCaixa = wb_supervisor_node_get_position(caixa[i]);
-        break; // usa a primeira caixa válida
-      }
-    }
-
     if(achei==0) {
   
-    // Se o sensor frontal detectar algo, tenta empurrar
-    double frente = wb_distance_sensor_get_value(SensorProx[0]) + wb_distance_sensor_get_value(SensorProx[7]);
+      // Se o sensor frontal detectar algo, tenta empurrar
+      double frente = wb_distance_sensor_get_value(SensorProx[0]) +
+                      wb_distance_sensor_get_value(SensorProx[7]);
   
-    if(frente > 450.0) { // valor alto = algo na frente
-      printf("CAIXA detectada! Empurrando...\n");
-      wb_motor_set_velocity(MotorEsquerdo, 3.0);
-      wb_motor_set_velocity(MotorDireito , 3.0);
-      tempoInicio = wb_robot_get_time();
+      if(frente > 450.0) { // valor alto = algo na frente
+        printf("CAIXA detectada! Empurrando...\n");
+        wb_motor_set_velocity(MotorEsquerdo, 3.0);
+        wb_motor_set_velocity(MotorDireito , 3.0);
+        tempoInicio = wb_robot_get_time();
   
-      // empurra por 1 segundo
-      while(wb_robot_get_time() - tempoInicio < 1.0) {
-        wb_robot_step(TIME_STEP);
-      }
-  
-      // Lê de novo as posições das caixas
-      for(i=0;i<QtddCaixa;i++){
-        if(caixa[i]!=NULL){
-          const double *p = wb_supervisor_node_get_position(caixa[i]);
-          posDepois[i][0]=p[0];
-          posDepois[i][1]=p[1];
-          posDepois[i][2]=p[2];
+        // empurra por 1 segundo
+        while(wb_robot_get_time() - tempoInicio < 1.0) {
+          if (wb_robot_step(TIME_STEP) == -1)
+            break;
         }
-      }
   
-      // Verifica se alguma caixa se moveu
-      for(i=0;i<QtddCaixa;i++){
-        double dx = posDepois[i][0]-posAntes[i][0];
-        double dy = posDepois[i][1]-posAntes[i][1];
-        double dist = sqrt(dx*dx + dy*dy);
-        if(dist > 0.02){ // se moveu 2 cm, achou a leve!
-          achei = 1;
-          printf("ACHEI A CAIXA LEVE! (%d)\n", i);
-          break;
+        // Lê de novo as posições das caixas
+        for(i=0;i<QtddCaixa;i++){
+          if(caixa[i]!=NULL){
+            const double *p = wb_supervisor_node_get_position(caixa[i]);
+            posDepois[i][0]=p[0];
+            posDepois[i][1]=p[1];
+            posDepois[i][2]=p[2];
+          }
         }
-      }
   
-      // Atualiza posAntes para continuar testando outras
-      for(i=0;i<QtddCaixa;i++){
-        posAntes[i][0]=posDepois[i][0];
-        posAntes[i][1]=posDepois[i][1];
-        posAntes[i][2]=posDepois[i][2];
+        // Verifica se alguma caixa se moveu
+        for(i=0;i<QtddCaixa;i++){
+          double dx = posDepois[i][0]-posAntes[i][0];
+          double dy = posDepois[i][1]-posAntes[i][1];
+          double dist = sqrt(dx*dx + dy*dy);
+          if(dist > 0.02){ // se moveu 2 cm, achou a leve!
+            achei = 1;
+            printf("ACHEI A CAIXA LEVE! (%d)\n", i);
+            break;
+          }
+        }
+  
+        // Atualiza posAntes para continuar testando outras
+        for(i=0;i<QtddCaixa;i++){
+          posAntes[i][0]=posDepois[i][0];
+          posAntes[i][1]=posDepois[i][1];
+          posAntes[i][2]=posDepois[i][2];
+        }
+
+        // Se AINDA não achou a caixa leve, gira para procurar outra
+        if (!achei) {
+          printf("Não era a caixa leve, girando para procurar outra...\n");
+          tempoInicio = wb_robot_get_time();
+          wb_motor_set_velocity(MotorEsquerdo, 2.5);
+          wb_motor_set_velocity(MotorDireito ,-2.5);
+
+          while (wb_robot_get_time() - tempoInicio < 0.8) { // gira por 0.8 s
+            if (wb_robot_step(TIME_STEP) == -1)
+              break;
+          }
+        }
+
       }
+      else {
+        // anda e gira levemente procurando
+        wb_motor_set_velocity(MotorEsquerdo, 3.0);
+        wb_motor_set_velocity(MotorDireito , 2.75);
+      }
+    }
+    else {
+      // Se já achou a caixa leve, gira no próprio eixo
       wb_motor_set_velocity(MotorEsquerdo, 2.5);
       wb_motor_set_velocity(MotorDireito ,-2.5);
     }
-    else {
-      // anda e gira levemente procurando
-      wb_motor_set_velocity(MotorEsquerdo, 3.0);
-      wb_motor_set_velocity(MotorDireito , 2.95);
-    }
-  }
-  else {
-    // Se já achou a caixa leve, gira no próprio eixo
-    wb_motor_set_velocity(MotorEsquerdo, 2.5);
-    wb_motor_set_velocity(MotorDireito ,-2.5);
-  }
 
-    // ----------- Limpa texto para próxima iteração -----------
-    memset(texto,0,TamanhoTexto);
   };
 
   /* Enter your cleanup code here */
